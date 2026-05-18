@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package matchmaking.v1;
+
+option go_package = "github.com/QosmuratSamat0/pairexx/proto/matchmaking/v1";
+
+import "google/protobuf/timestamp.proto";
+
+service MatchmakingService {
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc GetCandidates(GetCandidatesRequest) returns (GetCandidatesResponse);
+  rpc SendRequest(SendExchangeRequest) returns (SendExchangeResponse);
+  rpc AcceptRequest(AcceptExchangeRequest) returns (AcceptExchangeResponse);
+  rpc DeclineRequest(DeclineExchangeRequest) returns (DeclineExchangeResponse);
+}
+
+message Profile {
+  string user_id = 1;
+  string name = 2;
+  repeated string i_have = 3;
+  repeated string i_want = 4;
+  string bio = 5;
+}
+
+message UpdateProfileRequest {
+  Profile profile = 1;
+}
+
+message UpdateProfileResponse {
+  bool success = 1;
+}
+
+message GetCandidatesRequest {
+  string user_id = 1;
+}
+
+message GetCandidatesResponse {
+  repeated Profile candidates = 1;
+}
+
+message SendExchangeRequest {
+  string from_user_id = 1;
+  string to_user_id = 2;
+}
+
+message SendExchangeResponse {
+  string request_id = 1;
+}
+
+message AcceptExchangeRequest {
+  string user_id = 1;
+  string request_id = 2;
+}
+
+message AcceptExchangeResponse {
+  string room_id = 1;
+}
+
+message DeclineExchangeRequest {
+  string user_id = 1;
+  string request_id = 2;
+}
+
+message DeclineExchangeResponse {
+  bool success = 1;
+}
