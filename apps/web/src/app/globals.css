@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: 9, 9, 11;
+    --foreground: 255, 255, 255;
+    --primary: 59, 130, 246;
+    --primary-foreground: 255, 255, 255;
+    --secondary: 24, 24, 27;
+    --secondary-foreground: 161, 161, 170;
+    --accent: 37, 99, 235;
+    --accent-foreground: 255, 255, 255;
+    --border: 39, 39, 42;
+    --radius: 0.75rem;
+}
+
+.dark {
+    /* Sleek Dark is the default */
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground antialiased;
+        font-family:
+            "Inter",
+            system-ui,
+            -apple-system,
+            sans-serif;
+    }
+    ::selection {
+        background-color: rgba(59, 130, 246, 0.3);
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-semibold tracking-tight;
+    }
+}
+
+/* Sleek Minimalism Utilities */
+.sleek-card {
+    @apply rounded-2xl border border-white/5 bg-zinc-900 p-6 transition-all duration-150;
+}
+
+.sleek-button {
+    @apply rounded-lg bg-blue-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-blue-500 active:bg-blue-700 disabled:opacity-50;
+}
+
+.sleek-button-secondary {
+    @apply rounded-lg border border-white/5 bg-zinc-900 px-5 py-2.5 font-medium text-zinc-200 transition-colors hover:border-white/10 hover:bg-zinc-800 active:bg-zinc-900;
+}
+
+.sleek-input {
+    @apply rounded-xl border border-white/5 bg-zinc-800/70 pl-4 pr-4 py-3 text-zinc-100 placeholder:text-zinc-500 transition-colors focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/10;
+}
+
+/* Chat Bubbles - Focused and Clean */
+.chat-bubble {
+    @apply relative max-w-[82%] break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed transition-all sm:max-w-[70%];
+}
+
+.chat-bubble-me {
+    @apply self-end rounded-br-md bg-blue-600 text-white;
+}
+
+.chat-bubble-partner {
+    @apply self-start rounded-bl-md bg-zinc-800 text-zinc-100;
+}
+
+/* Voice Call Ripple - Subtle */
+.ripple {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgb(var(--primary));
+    border-radius: 50%;
+    opacity: 0;
+    animation: ripple 3s infinite;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-zinc-800 rounded-full hover:bg-zinc-700;
+}
