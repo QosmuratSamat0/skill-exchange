@@ -1,0 +1,29 @@
+name: Deploy API Gateway
+
+on:
+  push:
+    branches: ["dev"]
+    paths:
+      - "api-gateway/**"
+      - "docker-compose.services.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  run-deploy:
+    uses: ./.github/workflows/deploy-template.yml
+    with:
+      service_folder: "api-gateway"
+      image_name: "api-gateway"
+      compose_service: "api-gateway"
+      env_image_var: "API_GATEWAY_IMAGE"
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}

@@ -1,0 +1,38 @@
+name: SRE Capacity & Self-Healing Test
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every Sunday at midnight
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+  sre-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Run Ansible SRE Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+        run: |
+          # Generate a temporary inventory file for GitHub Actions
+          cat <<EOF > inventory.ini
+          [servers]
+          server1 ansible_host=${{ secrets.SSH_HOST }} ansible_user=${{ secrets.SSH_USER }}
+          EOF
+          
+          # Run the playbook
+          ansible-playbook -i inventory.ini ansible/stress-test.yml

@@ -1,0 +1,54 @@
+name: Deploy Base (DB & WebRTC)
+on:
+  push:
+    branches: ["dev"]
+    paths:
+      - 'docker-compose.infra.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Environment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            WORKDIR="${{ secrets.DEPLOY_PATH }}/app"
+            mkdir -p $WORKDIR
+            cd $WORKDIR
+            
+            echo "${{ secrets.COMMON_ENV }}" > .env
+            echo "TURN_EXTERNAL_IP=${{ secrets.SSH_HOST }}" >> .env
+
+      - name: Copy Infrastructure Files
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.infra.yml,docker/postgres/init/**"
+          target: "${{ secrets.DEPLOY_PATH }}/app"
+
+      - name: Docker Up
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}/app
+
+            docker network inspect pairexx-network >/dev/null 2>&1 || docker network create pairexx-network
+            docker compose -f docker-compose.infra.yml up -d
+
+
