@@ -323,6 +323,9 @@ Proof directories:
 - `services/chat-service/internal/delivery/ws/hub.go`
 - `libs/shared/tracing/otel.go`
 - `services/*/cmd/main.go`
+- `infrastructure/docker/docker-compose.dev.yml`
+- `infrastructure/docker/observability/grafana/provisioning/datasources/datasources.yml`
+- `infrastructure/docker/observability/grafana/provisioning/dashboards/`
 
 Implemented observability:
 
@@ -331,6 +334,15 @@ Implemented observability:
 - WebSocket connection and message counters in `chat-service`.
 - OpenTelemetry helper for OTLP HTTP trace export.
 - gRPC client instrumentation in the API Gateway.
+- Grafana with pre-provisioned Prometheus, Loki, and Tempo datasources.
+- Preloaded dashboard folder `Pairexx` with `pairexx-overview` dashboard.
+- Promtail log shipping into Loki for centralized service log queries.
+
+Grafana local access:
+
+- URL: `http://localhost:3001`
+- Default credentials from `.env`: `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`
+- Default fallback if not overridden: `admin` / `admin`
 
 ## Enterprise Folder Layout
 
@@ -398,7 +410,13 @@ Pairexx/
 
   infrastructure/
     docker/
-      docker-compose.dev.yml      # Local Postgres, Redis, NATS
+      docker-compose.dev.yml      # Local infra + observability stack
+      observability/
+        grafana/provisioning/
+        prometheus/
+        loki/
+        promtail/
+        tempo/
       postgres/init/
 
   scripts/
@@ -430,6 +448,12 @@ Pairexx/
 | Redis | 6379 | TCP |
 | NATS | 4222 | TCP |
 | NATS Monitoring | 8222 | HTTP |
+| Prometheus | 9090 | HTTP |
+| Loki | 3100 | HTTP |
+| Tempo Query | 3200 | HTTP |
+| Tempo OTLP gRPC | 4317 | gRPC |
+| Tempo OTLP HTTP | 4318 | HTTP |
+| Grafana | 3001 | HTTP |
 
 ## Definitive 5-Minute Setup and Launch Guide
 
@@ -497,6 +521,14 @@ Equivalent direct Docker command:
 ```powershell
 docker compose -f infrastructure/docker/docker-compose.dev.yml --env-file .env up -d
 ```
+
+To verify observability services quickly:
+
+```powershell
+docker compose -f infrastructure/docker/docker-compose.dev.yml ps prometheus grafana loki tempo promtail
+```
+
+Open Grafana at `http://localhost:3001` and navigate to Dashboards -> Pairexx -> pairexx-overview.
 
 ### 4. Run the entire backend architecture
 
