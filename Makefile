@@ -1,4 +1,4 @@
-.PHONY: help dev dev-down dev-logs dev-build frontend-dev backend-dev build test lint config-check
+.PHONY: help dev dev-down dev-logs dev-build frontend-dev backend-dev build test lint config-check observability-start observability-stop observability-clean observability-docs
 
 help:
 	@echo "Pairexx — доступные команды:"
@@ -13,6 +13,12 @@ help:
 	@echo "  make test          — запустить тесты"
 	@echo "  make lint          — запустить линтер"
 	@echo "  make config-check  — проверить наличие config.env и обязательных переменных"
+	@echo ""
+	@echo "Observability (Bonus 2 — 10% extra credit):"
+	@echo "  make observability-start  — запустить Prometheus и Grafana (Docker)"
+	@echo "  make observability-stop   — остановить Prometheus и Grafana"
+	@echo "  make observability-clean  — удалить контейнеры и данные"
+	@echo "  make observability-docs   — открыть документацию"
 	@echo ""
 	@echo "Первый запуск:"
 	@echo "  cp config.env.example config.env"
@@ -52,3 +58,35 @@ lint:
 # Checks that config.env exists and that all required SMTP/routing vars are set.
 config-check:
 	go run ./tools/config-check
+
+# ── Observability Stack (Bonus 2 — 10% extra credit) ─────────────────────────
+# Prometheus + Grafana setup for metrics, logging, and tracing.
+
+observability-start:
+	@echo Starting Observability Stack...
+	@echo.
+	@echo Starting Prometheus on http://localhost:9090
+	docker run -d --name=prometheus -p 9090:9090 -v "%CD%\deploy\prometheus.yml:/etc/prometheus/prometheus.yml" prom/prometheus --config.file=/etc/prometheus/prometheus.yml
+	@echo [OK] Prometheus started
+	@echo.
+	@echo Starting Grafana on http://localhost:3001
+	docker run -d --name=grafana -p 3001:3000 grafana/grafana
+	@echo [OK] Grafana started
+	@echo.
+	@echo Next steps:
+	@echo 1. Open http://localhost:3001 - login: admin/admin
+	@echo 2. Add Prometheus datasource: http://host.docker.internal:9090
+	@echo 3. Import dashboard: deploy/grafana-dashboard.json
+
+observability-stop:
+	docker stop prometheus grafana
+
+observability-clean:
+	docker stop prometheus grafana
+	docker rm prometheus grafana
+
+observability-docs:
+	@echo Observability Documentation:
+	@echo - Main guide: deploy/OBSERVABILITY.md
+	@echo - Quick ref: deploy/QUICK_REFERENCE.md
+	@echo - Windows setup: deploy/WINDOWS_SETUP.md

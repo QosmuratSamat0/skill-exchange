@@ -22,6 +22,7 @@ import (
 	delivery "github.com/QosmuratSamat0/pairexx/user-service/internal/delivery/http"
 	grpcDelivery "github.com/QosmuratSamat0/pairexx/user-service/internal/delivery/grpc"
 	"github.com/QosmuratSamat0/pairexx/user-service/internal/domain"
+	gwMiddleware "github.com/QosmuratSamat0/pairexx/user-service/internal/middleware"
 	"github.com/QosmuratSamat0/pairexx/user-service/internal/repository/postgres"
 	"github.com/QosmuratSamat0/pairexx/user-service/internal/usecase"
 	pb "github.com/QosmuratSamat0/pairexx/proto/user/v1"
@@ -86,6 +87,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(gwMiddleware.Metrics)
 
 	delivery.NewUserHandler(r, uc, cfg.InternalToken)
 

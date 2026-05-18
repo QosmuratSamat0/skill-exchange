@@ -13,6 +13,7 @@ import (
 	grpcDelivery "github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/delivery/grpc"
 	delivery "github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/delivery/http"
 	"github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/domain"
+	gwMiddleware "github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/middleware"
 	"github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/repository/redis"
 	"github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/usecase"
 	"github.com/QosmuratSamat0/pairexx/pkg/mq"
@@ -59,6 +60,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(gwMiddleware.Metrics)
 
 	delivery.NewMatchHandler(r, uc, cfg)
 

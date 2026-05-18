@@ -319,18 +319,114 @@ Pairexx exposes runtime observability through metrics and tracing hooks.
 Proof directories:
 
 - `services/api-gateway/internal/middleware/metrics.go`
+- `services/user-service/internal/middleware/metrics.go`
+- `services/matchmaking-service/internal/middleware/metrics.go`
 - `services/api-gateway/internal/middleware/tracing.go`
 - `services/chat-service/internal/delivery/ws/hub.go`
 - `libs/shared/tracing/otel.go`
 - `services/*/cmd/main.go`
+- `deploy/prometheus.yml`
+- `deploy/grafana-dashboard.json`
 
 Implemented observability:
 
-- Prometheus `/metrics` endpoints on backend services.
+- Prometheus `/metrics` endpoints on backend services (api-gateway, user-service, matchmaking-service).
 - API Gateway HTTP request counters and duration histograms.
+- User Service HTTP request counters and duration histograms.
+- Matchmaking Service HTTP request counters, duration histograms, and NATS event processing metrics.
 - WebSocket connection and message counters in `chat-service`.
 - OpenTelemetry helper for OTLP HTTP trace export.
 - gRPC client instrumentation in the API Gateway.
+
+#### Running Prometheus and Grafana Locally
+
+**Option 1: Docker (Recommended for live demonstration)**
+
+Start Prometheus:
+
+```bash
+docker run -d --name=prometheus -p 9090:9090 \
+  -v $(pwd)/deploy/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus --config.file=/etc/prometheus/prometheus.yml
+```
+
+On Windows (PowerShell):
+
+```powershell
+docker run -d --name=prometheus -p 9090:9090 `
+  -v "$((Get-Location).Path)\deploy\prometheus.yml:/etc/prometheus/prometheus.yml" `
+  prom/prometheus --config.file=/etc/prometheus/prometheus.yml
+```
+
+Start Grafana:
+
+```bash
+docker run -d --name=grafana -p 3001:3000 grafana/grafana
+```
+
+**Option 2: Docker Compose**
+
+Add to your `docker-compose.dev.yml`:
+
+```yaml
+prometheus:
+  image: prom/prometheus:latest
+  ports:
+    - "9090:9090"
+  volumes:
+    - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
+  command:
+    - '--config.file=/etc/prometheus/prometheus.yml'
+  networks:
+    - default
+
+grafana:
+  image: grafana/grafana:latest
+  ports:
+    - "3001:3000"
+  environment:
+    GF_SECURITY_ADMIN_PASSWORD: admin
+  networks:
+    - default
+```
+
+Then run:
+
+```bash
+docker compose -f infrastructure/docker/docker-compose.dev.yml up -d prometheus grafana
+```
+
+#### Accessing the Observability Stack
+
+- **Prometheus**: `http://localhost:9090`
+  - Query builder and metrics exploration
+  - Check scrape targets under **Status > Targets**
+- **Grafana**: `http://localhost:3001`
+  - Default credentials: `admin` / `admin` (reset on first login)
+  - Add Prometheus as a data source: `http://prometheus:9090` (or `http://host.docker.internal:9090` from within container)
+
+#### Importing the Pairexx Dashboard
+
+1. In Grafana, go to **+** → **Import Dashboard**
+2. Paste the contents of `deploy/grafana-dashboard.json`
+3. Select the Prometheus data source
+4. Click **Import**
+
+The dashboard displays:
+
+- **Throughput (RPS)**: Live requests per second across all services
+- **API Gateway Latency**: P95 and P99 response times
+- **User Service Latency**: P95 and P99 response times
+- **Matchmaking Service Latency**: P95 and P99 response times
+- **HTTP Status Codes**: 2xx (green), 4xx (yellow), 5xx (red) error distribution
+- **NATS Events Processing**: Success and error rates for exchange completion events
+
+#### Cleanup
+
+```bash
+docker stop prometheus grafana
+docker rm prometheus grafana
+```
 
 ## Enterprise Folder Layout
 
