@@ -1,0 +1,29 @@
+name: Deploy Notification Service
+
+on:
+  push:
+    branches: ["dev"]
+    paths:
+      - "notification-service/**"
+      - "docker-compose.services.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  run-deploy:
+    uses: ./.github/workflows/deploy-template.yml
+    with:
+      service_folder: "notification-service"
+      image_name: "notification-service"
+      compose_service: "notification-service"
+      env_image_var: "NOTIFICATION_SERVICE_IMAGE"
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
