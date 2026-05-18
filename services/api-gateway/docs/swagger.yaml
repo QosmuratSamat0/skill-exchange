@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: pairexx API Gateway
+  description: API Gateway for pairexx microservices
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Local Gateway
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [health]
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+
+  /users/anonymous:
+    post:
+      summary: Create anonymous session
+      description: Create a new anonymous user session and get tokens
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: string
+      responses:
+        "200":
+          description: Tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+
+  /match/search:
+    post:
+      summary: Search for partner
+      tags: [matchmaking]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter:
+                  type: object
+                  properties:
+                    gender:
+                      type: string
+                      enum: [male, female, any]
+                    interests:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        "202":
+          description: Accepted
+
+  /match/status:
+    get:
+      summary: Get match status
+      tags: [matchmaking]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Status info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  room_id:
+                    type: string
+
+  /users/me:
+    get:
+      summary: Get my profile
+      tags: [users]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Profile info
+
