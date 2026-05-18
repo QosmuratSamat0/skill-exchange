@@ -1,0 +1,25 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY,
+  device_id VARCHAR(255) UNIQUE,
+  email VARCHAR(255) UNIQUE,
+  password_hash VARCHAR(255),
+  gender VARCHAR(10) NOT NULL DEFAULT '',
+  interests TEXT[] NOT NULL DEFAULT '{}',
+  is_anonymous BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS bans (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL DEFAULT '',
+  banned_by VARCHAR(50) NOT NULL DEFAULT 'system',
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bans_user_id ON bans(user_id);
+CREATE INDEX IF NOT EXISTS idx_bans_expires_at ON bans(expires_at);
+
