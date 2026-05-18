@@ -100,6 +100,10 @@ type UserRepository interface {
 	UpsertProfile(ctx context.Context, profile *UserProfile) error
 	GetProfile(ctx context.Context, userID string) (*UserProfile, error)
 	UpdateEmailPreference(ctx context.Context, userID string, enabled bool) error
+	// GetEmailPreference reads ONLY the email_notifications_enabled column
+	// directly from the database, bypassing any Redis profile cache.
+	// Use this wherever a stale cached value would silently suppress emails.
+	GetEmailPreference(ctx context.Context, userID string) (bool, error)
 
 	// Reviews
 	CreateReview(ctx context.Context, review *Review) error
@@ -150,4 +154,9 @@ type UserUsecase interface {
 	UnbanUser(ctx context.Context, userID string) error
 	ListBans(ctx context.Context, userID string) ([]*Ban, error)
 	UpdateEmailPreference(ctx context.Context, userID string, enabled bool) error
+	// GetEmailPreference reads the toggle value directly from the database
+	// without going through the Redis profile cache. Required in
+	// GetUserPreferences to avoid returning a stale false that was cached
+	// before migration 0004 added the column.
+	GetEmailPreference(ctx context.Context, userID string) (bool, error)
 }

@@ -253,12 +253,21 @@ func (u *userUsecase) UpdateEmailPreference(ctx context.Context, userID string, 
 	if err := u.repo.UpdateEmailPreference(ctx, userID, enabled); err != nil {
 		return err
 	}
-	// Invalidate profile cache
+	// Invalidate profile cache so the next GetUserProfile read sees the new value.
 	if u.rdb != nil {
 		key := fmt.Sprintf("user:profile:%s", userID)
 		_ = u.rdb.Del(ctx, key).Err()
 	}
 	return nil
+}
+
+// GetEmailPreference reads the email_notifications_enabled flag directly from
+// the database via the repository, bypassing the Redis profile cache.
+// This is the safe read path for the notification pipeline: a profile cached
+// before migration 0004 added this column would deserialise as false (Go
+// zero value), silently suppressing all emails for that user.
+func (u *userUsecase) GetEmailPreference(ctx context.Context, userID string) (bool, error) {
+	return u.repo.GetEmailPreference(ctx, userID)
 }
 
 func (u *userUsecase) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {

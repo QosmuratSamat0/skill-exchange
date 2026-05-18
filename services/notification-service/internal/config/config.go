@@ -10,6 +10,8 @@ type Config struct {
 	LogLevel       string
 	Port           string
 	InternalToken  string
+	RepoDriver     string
+	DBURL          string
 	SMTPHost       string
 	SMTPPort       string
 	SMTPSender     string
@@ -24,6 +26,8 @@ func Load() *Config {
 		LogLevel:      getEnv("LOG_LEVEL", "info"),
 		Port:          getEnv("PORT", ""),
 		InternalToken: getEnv("INTERNAL_TOKEN", ""),
+		RepoDriver:    getEnv("REPO_DRIVER", "postgres"),
+		DBURL:         getEnv("DB_URL", ""),
 
 		// ── SMTP ─────────────────────────────────────────────────────────────
 		SMTPHost: getEnv("SMTP_HOST", "smtp.gmail.com"),

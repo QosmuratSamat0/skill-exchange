@@ -215,6 +215,16 @@ func (r *InMemoryUserRepository) GetProfile(ctx context.Context, userID string) 
 	return &cp, nil
 }
 
+func (r *InMemoryUserRepository) GetEmailPreference(ctx context.Context, userID string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	p, ok := r.profiles[userID]
+	if !ok {
+		return true, nil // no profile — default ON
+	}
+	return p.EmailNotificationsEnabled, nil
+}
+
 func (r *InMemoryUserRepository) UpdateEmailPreference(ctx context.Context, userID string, enabled bool) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

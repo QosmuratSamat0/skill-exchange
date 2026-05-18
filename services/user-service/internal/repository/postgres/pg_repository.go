@@ -212,12 +212,13 @@ func (r *PGUserRepository) GetProfile(ctx context.Context, userID string) (*doma
 	// lib/pq's scanner expects as text starting with '{', producing:
 	// "pq: unable to parse array; expected '{' at offset 0"
 	err := r.pool.QueryRow(ctx, `
-		SELECT user_id, name, avatar, bio, contact_number, teach_skills, learn_skills, rating, review_count, email_notifications_enabled, updated_at
+		SELECT user_id, name, avatar, bio, contact_number, teach_skills, learn_skills, rating, review_count,
+		       email_notifications_enabled, updated_at
 		FROM user_profiles WHERE user_id=$1
 	`, userID).Scan(
 		&p.UserID, &p.Name, &p.Avatar, &p.Bio, &p.ContactNumber,
-		&p.TeachSkills, &p.LearnSkills,
-		&p.Rating, &p.ReviewCount, &p.EmailNotificationsEnabled, &p.UpdatedAt,
+		&p.TeachSkills, &p.LearnSkills, &p.Rating, &p.ReviewCount,
+		&p.EmailNotificationsEnabled, &p.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -252,6 +253,25 @@ func (r *PGUserRepository) UpdateEmailPreference(ctx context.Context, userID str
 			updated_at = NOW()
 	`, userID, enabled)
 	return err
+}
+
+// GetEmailPreference reads ONLY the email_notifications_enabled column from
+// user_profiles directly from Postgres, bypassing any Redis cache layer.
+// Returns true when no row exists (mirrors the column's DEFAULT true) so that
+// new or incomplete profiles never suppress email delivery.
+func (r *PGUserRepository) GetEmailPreference(ctx context.Context, userID string) (bool, error) {
+	var enabled bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT email_notifications_enabled
+		FROM user_profiles WHERE user_id = $1
+	`, userID).Scan(&enabled)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return true, nil // no profile row — default ON (mirrors DB DEFAULT true)
+		}
+		return true, nil // any DB error — safe default is ON
+	}
+	return enabled, nil
 }
 
 // ---------------------------------------------------------------------------

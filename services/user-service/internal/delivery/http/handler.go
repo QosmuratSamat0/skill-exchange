@@ -557,6 +557,12 @@ func (h *UserHandler) UpdateEmailPreference(w http.ResponseWriter, r *http.Reque
 }
 
 // GET /internal/users/{id}/preferences  (internal token protected)
+//
+// IMPORTANT: email_notifications_enabled is read via GetEmailPreference,
+// which goes directly to Postgres rather than through the Redis profile
+// cache. This prevents a stale cached profile (populated before migration
+// 0004 added the column) from deserialising as false and silently
+// suppressing every email notification for that user.
 func (h *UserHandler) GetUserPreferences(w http.ResponseWriter, r *http.Request) {
 	if !h.isInternalAuthorized(r) {
 		jsonError(w, "unauthorized", http.StatusUnauthorized)
@@ -575,10 +581,11 @@ func (h *UserHandler) GetUserPreferences(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	profile, err := h.usecase.GetUserProfile(r.Context(), userID)
-	emailNotifEnabled := true // default to true if no profile
-	if err == nil && profile != nil {
-		emailNotifEnabled = profile.EmailNotificationsEnabled
+	// Direct DB read — bypasses Redis profile cache intentionally.
+	emailNotifEnabled, err := h.usecase.GetEmailPreference(r.Context(), userID)
+	if err != nil {
+		// Default ON: better to send one extra email than to silently miss one.
+		emailNotifEnabled = true
 	}
 
 	jsonOK(w, http.StatusOK, map[string]interface{}{

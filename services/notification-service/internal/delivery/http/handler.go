@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -20,6 +22,7 @@ type Handler struct {
 func New(r chi.Router, uc domain.Usecase, internalToken string) {
 	h := &Handler{uc: uc, internalToken: internalToken}
 	r.Post("/notify", h.Notify)
+	r.Get("/notifications", h.ListNotifications)
 	r.Get("/health", h.Health)
 }
 
@@ -87,6 +90,25 @@ func (h *Handler) Notify(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
+}
+
+func (h *Handler) ListNotifications(w http.ResponseWriter, r *http.Request) {
+	userID := strings.TrimSpace(r.Header.Get("X-User-ID"))
+	if userID == "" {
+		http.Error(w, "X-User-ID header is required", http.StatusUnauthorized)
+		return
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	items, err := h.uc.ListForUser(r.Context(), userID, limit)
+	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("[notifications] list failed")
+		http.Error(w, "failed to list notifications", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(items)
 }
 
 func (h *Handler) isInternalAuthorized(r *http.Request) bool {

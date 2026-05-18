@@ -71,12 +71,12 @@ func New(host string, port int, sender, password, userServiceURL, internalToken 
 // Send dispatches an email for "exchange_request" notifications only.
 // All other notification types are silently ignored (not an error).
 func (c *Channel) Send(ctx context.Context, n domain.Notification) error {
-	if n.Type != "exchange_request" {
+	if n.Type != "exchange_request" && n.Type != "exchange_completed" && n.Type != "exchange_completion_triggered" {
 		// Not our type — no-op, no log noise.
 		return nil
 	}
 
-	log.Printf("[smtp] processing exchange_request for user_id=%s", n.UserID)
+	log.Printf("[smtp] processing %s for user_id=%s", n.Type, n.UserID)
 
 	prefs, err := c.fetchPreferences(ctx, n.UserID)
 	if err != nil {
@@ -94,6 +94,30 @@ func (c *Channel) Send(ctx context.Context, n domain.Notification) error {
 
 	if prefs.Email == "" {
 		log.Printf("[smtp] WARNING: user %s has no email address — skipping", n.UserID)
+		return nil
+	}
+
+	if n.Type == "exchange_completed" {
+		subject := "Обмен успешно завершен!"
+		body := buildExchangeCompletedHTML()
+		log.Printf("[smtp] sending exchange_completed email to %q", prefs.Email)
+		if err := c.sendMail(ctx, prefs.Email, subject, body); err != nil {
+			log.Printf("[smtp] ERROR: failed to send email to %s: %v", prefs.Email, err)
+			return nil
+		}
+		log.Printf("[smtp] OK: email delivered to %s", prefs.Email)
+		return nil
+	}
+
+	if n.Type == "exchange_completion_triggered" {
+		subject := "Партнер предлагает завершить обмен навыками"
+		body := buildExchangeCompletionTriggeredHTML()
+		log.Printf("[smtp] sending exchange_completion_triggered email to %q", prefs.Email)
+		if err := c.sendMail(ctx, prefs.Email, subject, body); err != nil {
+			log.Printf("[smtp] ERROR: failed to send email to %s: %v", prefs.Email, err)
+			return nil
+		}
+		log.Printf("[smtp] OK: email delivered to %s", prefs.Email)
 		return nil
 	}
 
@@ -276,7 +300,7 @@ func buildEmailHTML(senderName string) string {
               <table cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="border-radius:10px;background:#2563eb;">
-                    <a href="https://pairexx.com/dashboard/notifications"
+                    <a href="http://localhost:3000/dashboard"
                        style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:-0.2px;">
                       Просмотреть запрос →
                     </a>
@@ -302,6 +326,107 @@ func buildEmailHTML(senderName string) string {
   </table>
 </body>
 </html>`, senderName)
+}
+
+func buildExchangeCompletionTriggeredHTML() string {
+	return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Подтвердите завершение обмена</title>
+</head>
+<body style="margin:0;padding:0;background:#09090b;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#09090b;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#18181b;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+          <tr>
+            <td style="background:#1d4ed8;padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">Pairexx</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.78);font-size:13px;">Завершение обмена</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="margin:0 0 12px;color:#ffffff;font-size:21px;font-weight:700;">Партнер предлагает завершить обмен</h2>
+              <p style="margin:0 0 24px;color:#a1a1aa;font-size:15px;line-height:1.6;">
+                Ваш партнер предлагает завершить обмен навыками! Пожалуйста, зайдите в чат и подтвердите завершение.
+              </p>
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:10px;background:#2563eb;">
+                    <a href="http://localhost:3000/dashboard/chats" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;">
+                      Перейти в чат
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid rgba(255,255,255,0.06);">
+              <p style="margin:0;color:#52525b;font-size:12px;text-align:center;">Pairexx automatic notification</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+func buildExchangeCompletedHTML() string {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skill exchange completed</title>
+</head>
+<body style="margin:0;padding:0;background:#09090b;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#09090b;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#18181b;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+          <tr>
+            <td style="background:#0f766e;padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">Pairexx</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.78);font-size:13px;">Skill exchange completed</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="margin:0 0 12px;color:#ffffff;font-size:21px;font-weight:700;">You finished a skill exchange!</h2>
+              <p style="margin:0 0 24px;color:#a1a1aa;font-size:15px;line-height:1.6;">
+                Both participants confirmed the exchange as complete. Thanks for learning together on Pairexx.
+              </p>
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:10px;background:#2563eb;">
+                    <a href="http://localhost:3000/dashboard" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;">
+                      Open dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:24px 0 0;color:#71717a;font-size:13px;line-height:1.5;">
+                Keep building your learning streak by starting another exchange from the dashboard.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid rgba(255,255,255,0.06);">
+              <p style="margin:0;color:#52525b;font-size:12px;text-align:center;">Pairexx automatic notification</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
 }
 
 // extractStringPayload safely reads a string value from the notification payload map.
