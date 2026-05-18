@@ -1,0 +1,31 @@
+# Version control
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+.gemini
+
+# Node / frontend build artifacts
+apps/web/node_modules
+apps/web/.next
+apps/web/dist
+
+# Go artifacts
+*.exe
+*.test
+vendor
+bin
+tmp
+
+# Logs
+*.log
+
+# Local env files
+.env.local
+*.env.local
+
+# Load tests & scripts (not needed in images)
+load-tests
+scripts
