@@ -9,6 +9,7 @@ import {
   Zap,
   Clock,
   Check,
+  CheckCircle2,
   X,
   TrendingUp,
 } from "lucide-react";
@@ -24,6 +25,7 @@ type ConnectionState =
   | "none"
   | "pending_sent"
   | "pending_received"
+  | "completed"
   | "connected";
 
 interface EnrichedCandidate extends MatchProfile {
@@ -114,6 +116,13 @@ function getConnectionState(
   sent: ExchangeRequest[],
   rooms: Room[],
 ): ConnectionState {
+  const completed =
+    incoming.some(
+      (r) => r.from_user_id === candidateId && r.status === "completed",
+    ) ||
+    sent.some((r) => r.to_user_id === candidateId && r.status === "completed");
+  if (completed) return "completed";
+
   const connectedFromRooms = rooms.some(
     (room) => room.user_a === candidateId || room.user_b === candidateId,
   );
@@ -319,6 +328,16 @@ function CandidateCard({
 
       {/* ── Action button — 4 connection states ── */}
 
+      {connState === "completed" && (
+        <button
+          disabled
+          className="w-full cursor-default rounded-lg border border-sky-500/20 bg-sky-500/10 px-4 py-2.5 text-sm font-medium text-sky-300 transition-colors flex items-center justify-center gap-2"
+        >
+          <CheckCircle2 className="w-4 h-4" />
+          Обмен успешно завершен
+        </button>
+      )}
+
       {connState === "connected" && (
         <button
           onClick={onGoToChats}
@@ -443,6 +462,12 @@ export default function FindPage() {
   const setCachedMatchProfile = useChatStore(
     (state) => state.setMyMatchProfile,
   );
+  const cachedIncomingRequests = useChatStore((state) => state.incomingRequests);
+  const cachedSentRequests = useChatStore((state) => state.sentRequests);
+  const setCachedIncomingRequests = useChatStore(
+    (state) => state.setIncomingRequests,
+  );
+  const setCachedSentRequests = useChatStore((state) => state.setSentRequests);
   const initialCachedMatchProfileRef = useRef(cachedMatchProfile);
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -458,8 +483,10 @@ export default function FindPage() {
   const [hasMatchProfile, setHasMatchProfile] = useState<boolean | null>(
     cachedMatchProfile ? true : null,
   );
-  const [incoming, setIncoming] = useState<ExchangeRequest[]>([]);
-  const [sent, setSent] = useState<ExchangeRequest[]>([]);
+  const [incoming, setIncoming] = useState<ExchangeRequest[]>(
+    cachedIncomingRequests,
+  );
+  const [sent, setSent] = useState<ExchangeRequest[]>(cachedSentRequests);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -473,6 +500,42 @@ export default function FindPage() {
     setMyProfile(cachedMatchProfile);
     setHasMatchProfile(true);
   }, [cachedMatchProfile]);
+
+  useEffect(() => {
+    setIncoming(cachedIncomingRequests);
+  }, [cachedIncomingRequests]);
+
+  useEffect(() => {
+    setSent(cachedSentRequests);
+  }, [cachedSentRequests]);
+
+  const refreshExchangeState = useCallback(async () => {
+    const [nextIncoming, nextSent] = await Promise.all([
+      api.getIncomingRequests().catch(() => [] as ExchangeRequest[]),
+      api.getSentRequests().catch(() => [] as ExchangeRequest[]),
+    ]);
+    const safeIncoming = Array.isArray(nextIncoming) ? nextIncoming : [];
+    const safeSent = Array.isArray(nextSent) ? nextSent : [];
+    setIncoming(safeIncoming);
+    setSent(safeSent);
+    setCachedIncomingRequests(safeIncoming);
+    setCachedSentRequests(safeSent);
+  }, [setCachedIncomingRequests, setCachedSentRequests]);
+
+  useEffect(() => {
+    const handleExchangeUpdate = () => {
+      void refreshExchangeState();
+    };
+    window.addEventListener("pairexx:exchange:updated", handleExchangeUpdate);
+    window.addEventListener("storage", handleExchangeUpdate);
+    return () => {
+      window.removeEventListener(
+        "pairexx:exchange:updated",
+        handleExchangeUpdate,
+      );
+      window.removeEventListener("storage", handleExchangeUpdate);
+    };
+  }, [refreshExchangeState]);
 
   // ── Initial load ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -503,18 +566,30 @@ export default function FindPage() {
         }),
       api
         .getIncomingRequests()
-        .then((d) => setIncoming(Array.isArray(d) ? d : []))
+        .then((d) => {
+          const next = Array.isArray(d) ? d : [];
+          setIncoming(next);
+          setCachedIncomingRequests(next);
+        })
         .catch(() => {}),
       api
         .getSentRequests()
-        .then((d) => setSent(Array.isArray(d) ? d : []))
+        .then((d) => {
+          const next = Array.isArray(d) ? d : [];
+          setSent(next);
+          setCachedSentRequests(next);
+        })
         .catch(() => {}),
       api
         .getAllRooms()
         .then((d) => setRooms(Array.isArray(d) ? d : []))
         .catch(() => {}),
     ]).then(() => setLoading(false));
-  }, [setCachedMatchProfile]);
+  }, [
+    setCachedIncomingRequests,
+    setCachedMatchProfile,
+    setCachedSentRequests,
+  ]);
 
   const runSearch = useCallback(async (value: string) => {
     const term = value.trim();

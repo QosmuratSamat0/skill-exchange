@@ -77,6 +77,7 @@ interface ChatStore {
   setCandidates: (candidates: MatchProfile[]) => void;
   setIncomingRequests: (requests: ExchangeRequest[]) => void;
   setSentRequests: (requests: ExchangeRequest[]) => void;
+  upsertExchangeRequest: (request: ExchangeRequest) => void;
 
   addMessage: (message: Message) => void;
   setMessages: (messages: Message[]) => void;
@@ -202,6 +203,18 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
   setCandidates: (candidates) => set({ candidates }),
   setIncomingRequests: (incomingRequests) => set({ incomingRequests }),
   setSentRequests: (sentRequests) => set({ sentRequests }),
+  upsertExchangeRequest: (request) =>
+    set((state) => {
+      const patch = (items: ExchangeRequest[]) =>
+        items.map((item) =>
+          item.id === request.id ? { ...item, ...request } : item,
+        );
+
+      return {
+        incomingRequests: patch(state.incomingRequests),
+        sentRequests: patch(state.sentRequests),
+      };
+    }),
 
   // ── Message / chat setters ──────────────────────────────────────────────────
   addMessage: (message) =>
