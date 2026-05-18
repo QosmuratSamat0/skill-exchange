@@ -1,0 +1,172 @@
+# =============================================================================
+# Pairexx — Development Infrastructure  (docker-compose.dev.yml)
+# =============================================================================
+# Manages: postgres, redis, nats
+# Services (api-gateway, user-service, …) run locally via: go run .
+#
+# USAGE:
+#   make dev          →  starts infra, reads .env
+#   make backend-dev  →  starts Go services (reads .env + config.env)
+#
+# Both files must exist:
+#   .env         → DB passwords, JWT secret, Redis password
+#   config.env   → SMTP credentials, service routing URLs
+#               (copy from config.env.example, then fill in credentials)
+# =============================================================================
+
+name: pairexx-dev
+
+services:
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: pairexx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pairexx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pairexx_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-pairexx}
+    ports:
+      - "0.0.0.0:5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pairexx}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - pairexx-dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: pairexx-redis
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--requirepass",
+        "${REDIS_PASSWORD:-redis_pass}",
+        "--appendonly",
+        "yes",
+      ]
+    ports:
+      - "0.0.0.0:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_pass}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - pairexx-dev
+
+  nats:
+    image: nats:2-alpine
+    container_name: pairexx-nats
+    restart: unless-stopped
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "0.0.0.0:4222:4222"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "printf 'PING\r\n' | nc -w 1 localhost 4222 | grep -q PONG",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - pairexx-dev
+
+  # ── Application Services ─────────────────────────────────────────────────
+  # Uncomment the blocks below to run services as containers instead of
+  # via 'go run .' (make backend-dev).  When using these, switch the routing
+  # URLs in config.env to the container-name variants:
+  #   USER_SERVICE_URL=http://user-service:8081
+  #   NOTIFICATION_SERVICE_URL=http://notification-service:8085
+
+  # user-service:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/user-service/Dockerfile
+  #   container_name: user-service
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres: { condition: service_healthy }
+  #     redis:    { condition: service_healthy }
+  #   environment:
+  #     APP_ENV:        development
+  #     PORT:           "8081"
+  #     GRPC_PORT:      "50081"
+  #     REPO_DRIVER:    postgres
+  #     DB_URL:         postgres://${POSTGRES_USER:-pairexx}:${POSTGRES_PASSWORD:-pairexx_pass}@postgres:5432/users_db?sslmode=disable
+  #     REDIS_URL:      redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+  #     JWT_SECRET:     ${JWT_SECRET}
+  #     INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+  #   ports:
+  #     - "8081:8081"
+  #     - "50081:50081"
+  #   networks: [pairexx-dev]
+
+  # notification-service:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/notification-service/Dockerfile
+  #   container_name: notification-service
+  #   restart: unless-stopped
+  #   depends_on:
+  #     nats: { condition: service_healthy }
+  #   environment:
+  #     APP_ENV:          development
+  #     PORT:             "8085"
+  #     NATS_URL:         nats://nats:4222
+  #     INTERNAL_TOKEN:   ${INTERNAL_TOKEN}
+  #     USER_SERVICE_URL: http://user-service:8081
+  #     # ── SMTP / Gmail ───────────────────────────────────────────────────
+  #     # Values are read from config.env via --env-file (see Makefile).
+  #     # The service config strips spaces from SMTP_PASSWORD automatically.
+  #     SMTP_HOST:     ${SMTP_HOST:-smtp.gmail.com}
+  #     SMTP_PORT:     ${SMTP_PORT:-587}
+  #     SMTP_SENDER:   ${SMTP_SENDER}
+  #     SMTP_PASSWORD: ${SMTP_PASSWORD}
+  #   ports:
+  #     - "8085:8085"
+  #   networks: [pairexx-dev]
+
+  # matchmaking-service:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/matchmaking-service/Dockerfile
+  #   container_name: matchmaking-service
+  #   restart: unless-stopped
+  #   depends_on:
+  #     redis: { condition: service_healthy }
+  #     nats:  { condition: service_healthy }
+  #   environment:
+  #     APP_ENV:                  development
+  #     PORT:                     "8082"
+  #     GRPC_PORT:                "50082"
+  #     REPO_DRIVER:              redis
+  #     REDIS_URL:                redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+  #     NATS_URL:                 nats://nats:4222
+  #     USER_SERVICE_URL:         http://user-service:8081
+  #     USER_SERVICE_GRPC_URL:    user-service:50081
+  #     CHAT_SERVICE_URL:         http://chat-service:8083
+  #     NOTIFICATION_SERVICE_URL: http://notification-service:8085
+  #     INTERNAL_TOKEN:           ${INTERNAL_TOKEN}
+  #   ports:
+  #     - "8082:8082"
+  #     - "50082:50082"
+  #   networks: [pairexx-dev]
+
+networks:
+  pairexx-dev:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
