@@ -12,19 +12,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/QosmuratSamat0/pairexx/pkg/metrics"
+	pb "github.com/QosmuratSamat0/pairexx/proto/user/v1"
+	"github.com/QosmuratSamat0/pairexx/user-service/internal/config"
+	grpcDelivery "github.com/QosmuratSamat0/pairexx/user-service/internal/delivery/grpc"
+	delivery "github.com/QosmuratSamat0/pairexx/user-service/internal/delivery/http"
+	"github.com/QosmuratSamat0/pairexx/user-service/internal/domain"
+	"github.com/QosmuratSamat0/pairexx/user-service/internal/repository/postgres"
+	"github.com/QosmuratSamat0/pairexx/user-service/internal/usecase"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/QosmuratSamat0/pairexx/user-service/internal/config"
-	delivery "github.com/QosmuratSamat0/pairexx/user-service/internal/delivery/http"
-	grpcDelivery "github.com/QosmuratSamat0/pairexx/user-service/internal/delivery/grpc"
-	"github.com/QosmuratSamat0/pairexx/user-service/internal/domain"
-	"github.com/QosmuratSamat0/pairexx/user-service/internal/repository/postgres"
-	"github.com/QosmuratSamat0/pairexx/user-service/internal/usecase"
-	pb "github.com/QosmuratSamat0/pairexx/proto/user/v1"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	goredis "github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
@@ -109,7 +110,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen for gRPC: %v", err)
 	}
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(metrics.UnaryServerInterceptor("user-service")),
+		grpc.ChainStreamInterceptor(metrics.StreamServerInterceptor("user-service")),
+	)
 	pb.RegisterUserServiceServer(grpcServer, grpcDelivery.NewUserHandler(uc))
 
 	go func() {

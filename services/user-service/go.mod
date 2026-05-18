@@ -14,12 +14,16 @@ require (
 )
 
 require (
+	github.com/QosmuratSamat0/pairexx/pkg v0.0.0
 	github.com/QosmuratSamat0/pairexx/proto v0.0.0
 	github.com/lib/pq v1.10.9
 	google.golang.org/grpc v1.81.0
 )
 
-replace github.com/QosmuratSamat0/pairexx/proto => ../../libs/proto
+replace (
+	github.com/QosmuratSamat0/pairexx/pkg => ../../libs/shared
+	github.com/QosmuratSamat0/pairexx/proto => ../../libs/proto
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

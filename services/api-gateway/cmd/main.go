@@ -14,6 +14,7 @@ import (
 	"github.com/QosmuratSamat0/pairexx/api-gateway/internal/handler"
 	gwMiddleware "github.com/QosmuratSamat0/pairexx/api-gateway/internal/middleware"
 	"github.com/QosmuratSamat0/pairexx/api-gateway/internal/proxy"
+	"github.com/QosmuratSamat0/pairexx/pkg/tracing"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -26,6 +27,21 @@ import (
 func main() {
 	cfg := config.Load()
 	validateConfig(cfg)
+
+	if cfg.OTELCollectorURL != "" {
+		tp, err := tracing.InitTracer(context.Background(), "api-gateway", cfg.OTELCollectorURL)
+		if err != nil {
+			log.Warn().Err(err).Str("otel_collector_url", cfg.OTELCollectorURL).Msg("failed to init tracing")
+		} else {
+			defer func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := tp.Shutdown(ctx); err != nil {
+					log.Warn().Err(err).Msg("failed to shutdown tracer provider")
+				}
+			}()
+		}
+	}
 
 	// Setup logger
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix

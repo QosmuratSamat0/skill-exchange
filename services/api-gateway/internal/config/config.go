@@ -21,6 +21,7 @@ type Config struct {
 	AllowedOrigins             []string
 	DevAllowedOrigins          []string
 	InternalToken              string
+	OTELCollectorURL           string
 }
 
 func Load() *Config {
@@ -40,6 +41,7 @@ func Load() *Config {
 		AllowedOrigins:             parseCSVEnv("ALLOWED_ORIGINS"),
 		DevAllowedOrigins:          parseCSVEnv("DEV_ALLOWED_ORIGINS"),
 		InternalToken:              getEnv("INTERNAL_TOKEN", ""),
+		OTELCollectorURL:           getEnv("OTEL_COLLECTOR_URL", ""),
 	}
 }
 

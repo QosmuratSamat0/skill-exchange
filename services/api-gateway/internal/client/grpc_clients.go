@@ -3,6 +3,7 @@ package client
 import (
 	"time"
 
+	"github.com/QosmuratSamat0/pairexx/pkg/metrics"
 	pbMatch "github.com/QosmuratSamat0/pairexx/proto/matchmaking/v1"
 	pbUser "github.com/QosmuratSamat0/pairexx/proto/user/v1"
 	"github.com/sony/gobreaker"
@@ -25,6 +26,8 @@ func NewGRPCClients(userAddr, matchAddr string) (*GRPCClients, error) {
 	uConn, err := grpc.Dial(userAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		grpc.WithChainUnaryInterceptor(metrics.UnaryClientInterceptor("api-gateway")),
+		grpc.WithChainStreamInterceptor(metrics.StreamClientInterceptor("api-gateway")),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                2 * time.Minute,
 			Timeout:             3 * time.Second,
@@ -37,6 +40,8 @@ func NewGRPCClients(userAddr, matchAddr string) (*GRPCClients, error) {
 	mConn, err := grpc.Dial(matchAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		grpc.WithChainUnaryInterceptor(metrics.UnaryClientInterceptor("api-gateway")),
+		grpc.WithChainStreamInterceptor(metrics.StreamClientInterceptor("api-gateway")),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                2 * time.Minute,
 			Timeout:             3 * time.Second,

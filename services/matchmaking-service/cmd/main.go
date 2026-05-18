@@ -15,6 +15,7 @@ import (
 	"github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/domain"
 	"github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/repository/redis"
 	"github.com/QosmuratSamat0/pairexx/matchmaking-service/internal/usecase"
+	"github.com/QosmuratSamat0/pairexx/pkg/metrics"
 	"github.com/QosmuratSamat0/pairexx/pkg/mq"
 	pb "github.com/QosmuratSamat0/pairexx/proto/matchmaking/v1"
 	"github.com/go-chi/chi/v5"
@@ -85,7 +86,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to listen for gRPC")
 	}
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(metrics.UnaryServerInterceptor("matchmaking-service")),
+		grpc.ChainStreamInterceptor(metrics.StreamServerInterceptor("matchmaking-service")),
+	)
 	pb.RegisterMatchmakingServiceServer(grpcServer, grpcDelivery.NewMatchmakingHandler(uc))
 
 	go func() {

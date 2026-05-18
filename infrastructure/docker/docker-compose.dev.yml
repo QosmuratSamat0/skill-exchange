@@ -164,9 +164,96 @@ services:
   #     - "50082:50082"
   #   networks: [pairexx-dev]
 
+  # Observability
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: pairexx-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_dev_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - pairexx-dev
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: pairexx-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "127.0.0.1:3200:3200"
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_dev_data:/var/tempo
+    networks:
+      - pairexx-dev
+
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: pairexx-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./observability/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_dev_data:/loki
+    networks:
+      - pairexx-dev
+
+  promtail:
+    image: grafana/promtail:3.2.1
+    container_name: pairexx-promtail
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/promtail.yml"]
+    volumes:
+      - ./observability/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - ../../logs:/workspace/logs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    depends_on:
+      - loki
+    networks:
+      - pairexx-dev
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    container_name: pairexx-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    networks:
+      - pairexx-dev
+
 networks:
   pairexx-dev:
     driver: bridge
 
 volumes:
   postgres_dev_data:
+  prometheus_dev_data:
+  tempo_dev_data:
+  loki_dev_data:
+  grafana_dev_data:

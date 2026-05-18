@@ -200,7 +200,12 @@ func main() {
 	ctx, cancel := context.WithCancel(sigCtx)
 	defer cancel()
 
-	running, err := startServices(ctx, services)
+	logDir := filepath.Join(root, "logs")
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		log.Fatal().Err(err).Str("dir", logDir).Msg("failed to create service log directory")
+	}
+
+	running, err := startServices(ctx, services, logDir)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to start one or more services")
 	}
@@ -591,7 +596,7 @@ func localNATSURL() string {
 	return fmt.Sprintf("nats://%s:%s", host, port)
 }
 
-func startServices(ctx context.Context, services []serviceSpec) ([]*runningService, error) {
+func startServices(ctx context.Context, services []serviceSpec, logDir string) ([]*runningService, error) {
 	running := make([]*runningService, 0, len(services))
 	for _, svc := range services {
 		binary, err := buildServiceBinary(svc)
@@ -637,8 +642,8 @@ func startServices(ctx context.Context, services []serviceSpec) ([]*runningServi
 
 		rs := &runningService{spec: svc, binary: binary, cmd: cmd}
 		running = append(running, rs)
-		go streamOutput(svc.Name, stdout)
-		go streamOutput(svc.Name, stderr)
+		go streamOutput(svc.Name, stdout, logDir)
+		go streamOutput(svc.Name, stderr, logDir)
 		log.Info().Str("service", svc.Name).Str("dir", svc.Dir).Msg("started")
 	}
 	return running, nil
@@ -689,13 +694,21 @@ func mergedEnv(overrides map[string]string) []string {
 	return result
 }
 
-func streamOutput(prefix string, reader io.ReadCloser) {
+func streamOutput(prefix string, reader io.ReadCloser, logDir string) {
 	defer reader.Close()
+	logFile, err := os.OpenFile(filepath.Join(logDir, prefix+".log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err == nil {
+		defer logFile.Close()
+	}
 	scanner := bufio.NewScanner(reader)
 	buffer := make([]byte, 0, 64*1024)
 	scanner.Buffer(buffer, 1024*1024)
 	for scanner.Scan() {
-		fmt.Printf("[%s] %s\n", prefix, scanner.Text())
+		line := scanner.Text()
+		fmt.Printf("[%s] %s\n", prefix, line)
+		if logFile != nil {
+			_, _ = fmt.Fprintf(logFile, "%s\n", line)
+		}
 	}
 }
 
