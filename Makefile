@@ -65,18 +65,15 @@ config-check:
 observability-start:
 	@echo Starting Observability Stack...
 	@echo.
-	@echo Starting Prometheus on http://localhost:9090
-	docker run -d --name=prometheus -p 9090:9090 -v "%CD%\deploy\prometheus.yml:/etc/prometheus/prometheus.yml" prom/prometheus --config.file=/etc/prometheus/prometheus.yml
-	@echo [OK] Prometheus started
-	@echo.
-	@echo Starting Grafana on http://localhost:3001
-	docker run -d --name=grafana -p 3001:3000 grafana/grafana
-	@echo [OK] Grafana started
-	@echo.
-	@echo Next steps:
-	@echo 1. Open http://localhost:3001 - login: admin/admin
-	@echo 2. Add Prometheus datasource: http://host.docker.internal:9090
-	@echo 3. Import dashboard: deploy/grafana-dashboard.json
+	@echo Use one of these instead:
+	@echo   - Windows batch: observability-start.bat
+	@echo   - Windows PowerShell: .\observability.ps1
+	@echo   - Or run directly:
+	@echo     docker stop prometheus grafana 2>nul
+	@echo     docker run -d --name=prometheus -p 9090:9090 ^
+	@echo       -v "%CD%\deploy\prometheus.yml:/etc/prometheus/prometheus.yml" ^
+	@echo       prom/prometheus --config.file=/etc/prometheus/prometheus.yml
+	@echo     docker run -d --name=grafana -p 3001:3000 grafana/grafana
 
 observability-stop:
 	docker stop prometheus grafana

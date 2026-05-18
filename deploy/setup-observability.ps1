@@ -2,30 +2,31 @@
 # Observability Stack Setup for PowerShell
 # Run: .\deploy\setup-observability.ps1
 
-Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║  Pairexx Observability Stack — PowerShell Setup          ║" -ForegroundColor Cyan
-Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "=====================================================================" -ForegroundColor Cyan
+Write-Host "  Pairexx Observability Stack - PowerShell Setup" -ForegroundColor Cyan
+Write-Host "=====================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-$projectRoot = (Get-Location).Path
-$prometheusConfig = Join-Path $projectRoot "deploy" "prometheus.yml"
+$projectRoot = Split-Path (Get-Location).Path -Parent
+$prometheusConfig = "$projectRoot\deploy\prometheus.yml"
 
 # Validate config exists
 if (-not (Test-Path $prometheusConfig)) {
-    Write-Host "❌ Error: prometheus.yml not found at $prometheusConfig" -ForegroundColor Red
+    Write-Host "ERROR: prometheus.yml not found at $prometheusConfig" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✓ Configuration validated" -ForegroundColor Green
+Write-Host "Configuration validated" -ForegroundColor Green
 Write-Host ""
 
 # Menu
 Write-Host "Select operation:" -ForegroundColor Yellow
-Write-Host "  1. Start Prometheus and Grafana"
-Write-Host "  2. Stop containers"
-Write-Host "  3. Clean up (remove containers)"
-Write-Host "  4. View logs"
-Write-Host "  5. Exit"
+Write-Host "  1. Start Prometheus and Grafana" -ForegroundColor White
+Write-Host "  2. Stop containers" -ForegroundColor White
+Write-Host "  3. Clean up (remove containers)" -ForegroundColor White
+Write-Host "  4. View logs" -ForegroundColor White
+Write-Host "  5. Exit" -ForegroundColor White
 Write-Host ""
 
 $choice = Read-Host "Enter choice (1-5)"
@@ -35,58 +36,58 @@ switch ($choice) {
         Write-Host ""
         Write-Host "Starting Prometheus..." -ForegroundColor Green
         docker run -d --name=prometheus -p 9090:9090 `
-          -v "$prometheusConfig`:/etc/prometheus/prometheus.yml" `
-          prom/prometheus --config.file=/etc/prometheus/prometheus.yml
+          -v "$prometheusConfig`:c:/etc/prometheus/prometheus.yml" `
+          prom/prometheus --config.file=c:/etc/prometheus/prometheus.yml | Out-Null
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Prometheus started on http://localhost:9090" -ForegroundColor Green
+            Write-Host "OK - Prometheus started on http://localhost:9090" -ForegroundColor Green
         } else {
-            Write-Host "⚠️  Prometheus may already be running" -ForegroundColor Yellow
+            Write-Host "WARNING - Prometheus may already be running" -ForegroundColor Yellow
         }
 
         Write-Host ""
         Write-Host "Starting Grafana..." -ForegroundColor Green
-        docker run -d --name=grafana -p 3001:3000 grafana/grafana
+        docker run -d --name=grafana -p 3001:3000 grafana/grafana | Out-Null
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Grafana started on http://localhost:3001" -ForegroundColor Green
+            Write-Host "OK - Grafana started on http://localhost:3001" -ForegroundColor Green
         } else {
-            Write-Host "⚠️  Grafana may already be running" -ForegroundColor Yellow
+            Write-Host "WARNING - Grafana may already be running" -ForegroundColor Yellow
         }
 
         Write-Host ""
-        Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
+        Write-Host "=====================================================================" -ForegroundColor Cyan
         Write-Host "Observability Stack is running!" -ForegroundColor Green
         Write-Host ""
         Write-Host "Next steps:" -ForegroundColor Yellow
-        Write-Host "  1. Open http://localhost:3001 in your browser"
-        Write-Host "  2. Login: admin / admin"
-        Write-Host "  3. Add Prometheus data source:"
-        Write-Host "     - Settings → Data Sources → Add Prometheus"
-        Write-Host "     - URL: http://host.docker.internal:9090"
-        Write-Host "     - Click 'Save & Test'"
-        Write-Host "  4. Import dashboard:"
-        Write-Host "     - + → Import Dashboard"
-        Write-Host "     - Upload deploy\grafana-dashboard.json"
+        Write-Host "  1. Open http://localhost:3001 in your browser" -ForegroundColor White
+        Write-Host "  2. Login: admin / admin" -ForegroundColor White
+        Write-Host "  3. Add Prometheus data source:" -ForegroundColor White
+        Write-Host "     - Settings > Data Sources > Add Prometheus" -ForegroundColor Gray
+        Write-Host "     - URL: http://host.docker.internal:9090" -ForegroundColor Gray
+        Write-Host "     - Save and Test" -ForegroundColor Gray
+        Write-Host "  4. Import dashboard:" -ForegroundColor White
+        Write-Host "     - Create > Import Dashboard" -ForegroundColor Gray
+        Write-Host "     - Upload deploy/grafana-dashboard.json" -ForegroundColor Gray
         Write-Host ""
-        Write-Host "  Check metrics status:"
-        Write-Host "  - Prometheus targets: http://localhost:9090/targets"
-        Write-Host "  - Query builder: http://localhost:9090/graph"
-        Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
+        Write-Host "Check metrics status:" -ForegroundColor Yellow
+        Write-Host "  - Prometheus targets: http://localhost:9090/targets" -ForegroundColor Gray
+        Write-Host "  - Query builder: http://localhost:9090/graph" -ForegroundColor Gray
+        Write-Host "=====================================================================" -ForegroundColor Cyan
         Write-Host ""
     }
 
     "2" {
         Write-Host "Stopping containers..." -ForegroundColor Yellow
-        docker stop prometheus grafana 2> $null
-        Write-Host "✓ Containers stopped" -ForegroundColor Green
+        docker stop prometheus grafana 2>$null
+        Write-Host "OK - Containers stopped" -ForegroundColor Green
     }
 
     "3" {
         Write-Host "Removing containers and volumes..." -ForegroundColor Yellow
-        docker stop prometheus grafana 2> $null
-        docker rm prometheus grafana 2> $null
-        Write-Host "✓ Containers removed" -ForegroundColor Green
+        docker stop prometheus grafana 2>$null
+        docker rm prometheus grafana 2>$null
+        Write-Host "OK - Containers removed" -ForegroundColor Green
     }
 
     "4" {
