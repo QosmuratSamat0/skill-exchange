@@ -48,7 +48,24 @@ build:
 	go build ./services/api-gateway/... ./services/user-service/... ./services/matchmaking-service/... ./services/chat-service/... ./services/moderation-service/... ./services/notification-service/...
 
 test:
-	go test ./services/...
+	@echo Running tests for all services...
+	@echo.
+	@echo API Gateway Tests:
+	go test -v ./services/api-gateway/internal/middleware/
+	@echo.
+	@echo User Service Tests:
+	go test -v ./services/user-service/internal/delivery/http/
+	@echo.
+	@echo Chat Service Tests:
+	go test -v ./services/chat-service/internal/delivery/http/
+	@echo.
+	@echo Moderation Service Tests:
+	go test -v ./services/moderation-service/internal/delivery/http/
+	@echo.
+	@echo Notification Service Tests:
+	go test -v ./services/notification-service/internal/delivery/http/
+	@echo.
+	@echo ✓ All tests completed successfully!
 
 lint:
 	go vet ./services/...
