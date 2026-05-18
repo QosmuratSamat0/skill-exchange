@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { chatSocket } from "@/lib/socket";
 import { api, getAccessToken } from "@/lib/api";
-import type { MatchNotification, Room } from "@/types/index";
+import type { ExchangeRequest, MatchNotification, Room } from "@/types/index";
 
 function decodeUserIdFromAccessToken(token: string | null): string | null {
   if (!token || typeof window === "undefined") return null;
@@ -257,6 +257,22 @@ export function useChat() {
 
         case "request_cancelled": {
           void refreshIncomingRequests();
+          break;
+        }
+
+        case "exchange_completion_triggered":
+        case "exchange_completed": {
+          const request = data.payload as ExchangeRequest | undefined;
+          if (request?.id) {
+            useChatStore.getState().upsertExchangeRequest(request);
+            window.dispatchEvent(
+              new CustomEvent("pairexx:exchange:updated", {
+                detail: request,
+              }),
+            );
+          }
+          void refreshIncomingRequests();
+          void refreshSentRequests();
           break;
         }
 

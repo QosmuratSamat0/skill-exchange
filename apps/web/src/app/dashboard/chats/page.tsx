@@ -8,6 +8,7 @@ import { clsx } from "clsx";
 import { api } from "@/lib/api";
 import { useChat } from "@/hooks/useChat";
 import { usePartnerProfile } from "@/hooks/usePartnerProfile";
+import { useChatStore } from "@/store/chatStore";
 import { SkillTag } from "@/components/SkillTag";
 import type {
   ExchangeRequest,
@@ -161,6 +162,8 @@ export default function ChatsPage() {
     unsubscribeFromSocketEvent,
     setMe,
     setUserId,
+    setIncomingRequests,
+    setSentRequests,
     userId,
     me,
   } = useChat();
@@ -254,10 +257,10 @@ export default function ChatsPage() {
         }
         const accepted: TaggedRequest[] = [
           ...(Array.isArray(incoming) ? incoming : [])
-            .filter((r) => r.status === "accepted")
+            .filter((r) => r.status === "accepted" || r.status === "completed")
             .map((r) => ({ ...r, direction: "incoming" as const })),
           ...(Array.isArray(sent) ? sent : [])
-            .filter((r) => r.status === "accepted")
+            .filter((r) => r.status === "accepted" || r.status === "completed")
             .map((r) => ({ ...r, direction: "outgoing" as const })),
         ];
         const roomList = Array.isArray(allRooms) ? allRooms : [];
@@ -266,6 +269,8 @@ export default function ChatsPage() {
           roomList,
           currentUser?.id ?? userId ?? me?.id,
         );
+        setIncomingRequests(Array.isArray(incoming) ? incoming : []);
+        setSentRequests(Array.isArray(sent) ? sent : []);
         setAcceptedRequests(accepted);
         setRooms(roomList);
         void loadPartnerProfiles(chatContacts);
@@ -276,7 +281,15 @@ export default function ChatsPage() {
       }
     }
     load();
-  }, [loadPartnerProfiles, me?.id, setMe, setUserId, userId]);
+  }, [
+    loadPartnerProfiles,
+    me?.id,
+    setIncomingRequests,
+    setMe,
+    setSentRequests,
+    setUserId,
+    userId,
+  ]);
 
   // ── Load active room + my profile ──────────────────────────────────────────
   useEffect(() => {
@@ -458,6 +471,17 @@ export default function ChatsPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   const applyUpdatedRequest = useCallback((updated: ExchangeRequest) => {
+    useChatStore.getState().upsertExchangeRequest(updated);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        "pairexx:exchange:updated",
+        JSON.stringify({ request_id: updated.id, status: updated.status }),
+      );
+      window.dispatchEvent(
+        new CustomEvent("pairexx:exchange:updated", { detail: updated }),
+      );
+    }
+
     setAcceptedRequests((prev) =>
       prev.map((request) =>
         request.id === updated.id
@@ -540,7 +564,7 @@ export default function ChatsPage() {
     onSuccess: (updated) => {
       applyUpdatedRequest(updated);
       if (updated.status === "completed") {
-        setCompletionNotice("Обмен успешно завершён! Баллы уже начислены.");
+        setCompletionNotice("Обмен успешно завершён!");
         window.setTimeout(() => router.push("/dashboard"), 1400);
         return;
       }

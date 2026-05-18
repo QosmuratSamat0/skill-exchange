@@ -24,9 +24,9 @@ type AuthTab = "login" | "register";
 // Using the absolute-inset pattern + pl-10 directly on <input> so there is
 // zero risk of a CSS-specificity conflict with any global utility class.
 const INPUT_CLS =
-  "w-full rounded-xl border border-white/5 bg-zinc-800/70 py-3 text-zinc-100 " +
-  "placeholder:text-zinc-500 transition-colors focus:border-blue-500/60 " +
-  "focus:outline-none focus:ring-2 focus:ring-blue-500/10";
+  "w-full rounded-2xl border border-zinc-700/50 bg-zinc-800/80 py-3.5 px-4 text-zinc-100 " +
+  "placeholder:text-zinc-500 transition-all focus:border-blue-500/60 focus:bg-zinc-800 " +
+  "focus:outline-none focus:ring-2 focus:ring-blue-500/20";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AuthPage() {
@@ -160,114 +160,73 @@ export default function AuthPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col">
-      {/* ── Header ── */}
-      <header className="border-b border-white/5 px-6 py-4">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            <span className="text-sm">На главную</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-white fill-white/20" />
-            </div>
-            <span className="font-semibold text-sm">Pairexx</span>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-900 via-[#0a0a0a] to-zinc-950 text-white flex flex-col items-center justify-center px-4">
+      {/* ── Background grid effect ── */}
+      <div className="fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:80px_80px] pointer-events-none [mask-image:radial-gradient(ellipse_80%_100%_at_50%_0%,black_0%,transparent_80%)]" />
 
-      {/* ── Main ── */}
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md space-y-6">
-          {/* Title */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold">Добро пожаловать</h1>
-            <p className="text-zinc-500 text-sm">
-              Войди, чтобы начать обмениваться навыками
-            </p>
-          </div>
+      {/* ── Back Link ── */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Back
+      </Link>
 
-          {/* Tab switcher */}
-          <div
-            className="flex bg-zinc-900 border border-white/5 p-1 rounded-2xl"
-            role="tablist"
-            aria-label="Auth mode"
-          >
-            {(["login", "register"] as AuthTab[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
-                className={clsx(
-                  "flex-1 cursor-pointer py-2.5 rounded-xl text-sm font-medium transition-all",
-                  tab === t
-                    ? "bg-[#050505] text-white shadow"
-                    : "text-zinc-500 hover:text-zinc-300",
-                )}
-              >
-                {t === "login" ? "Войти" : "Регистрация"}
-              </button>
-            ))}
-          </div>
-
+      {/* ── Main Content Card ── */}
+      <main className="relative z-10 w-full max-w-md">
+        <div className="rounded-3xl border border-white/10 bg-zinc-900/80 backdrop-blur-xl px-8 py-10 sm:px-10 sm:py-12 shadow-2xl shadow-zinc-900/50">
+          
           {/* ════════════════ LOGIN ════════════════ */}
           {tab === "login" && (
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in-50 duration-300">
+              {/* Header */}
+              <div className="text-center space-y-2 mb-8">
+                <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
+                <p className="text-sm text-zinc-400">
+                  Sign in to your Pairexx account
+                </p>
+              </div>
+
               {/* Email */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+              <div className="space-y-2.5">
+                <label className="block text-sm font-semibold text-zinc-200">
                   Email
                 </label>
-                {/* Wrapper: position:relative so the icon can be absolute inside */}
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <Mail className="h-4 w-4 text-zinc-500" />
-                  </div>
-                  {/* pl-10 lives directly on <input> — no competing class can override it */}
-                  <input
-                    type="email"
-                    value={loginForm.email}
-                    onChange={(e) =>
-                      setLoginForm({ ...loginForm, email: e.target.value })
-                    }
-                    placeholder="you@example.com"
-                    className={`${INPUT_CLS} pl-10 pr-4`}
-                    required
-                    autoComplete="email"
-                  />
-                </div>
+                <input
+                  type="email"
+                  value={loginForm.email}
+                  onChange={(e) =>
+                    setLoginForm({ ...loginForm, email: e.target.value })
+                  }
+                  placeholder="Enter your email"
+                  className={`${INPUT_CLS} w-full px-4`}
+                  required
+                  autoComplete="email"
+                />
               </div>
 
               {/* Password */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Пароль
+              <div className="space-y-2.5">
+                <label className="block text-sm font-semibold text-zinc-200">
+                  Password
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <Lock className="h-4 w-4 text-zinc-500" />
-                  </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={loginForm.password}
                     onChange={(e) =>
                       setLoginForm({ ...loginForm, password: e.target.value })
                     }
-                    placeholder="Ваш пароль"
-                    className={`${INPUT_CLS} pl-10 pr-10`}
+                    placeholder="Enter your password"
+                    className={`${INPUT_CLS} w-full px-4 pr-12`}
                     required
                     autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-zinc-500 hover:text-white transition-colors"
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-500 hover:text-white transition-colors"
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -287,279 +246,295 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="sleek-button w-full disabled:opacity-50"
+                className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 px-6 py-3 font-bold text-white transition-all hover:shadow-lg hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed duration-200 mt-2"
               >
-                {loginLoading ? "Вхожу..." : "Войти"}
+                {loginLoading ? "Signing in..." : "Log In"}
               </button>
+
+              {/* Switch to signup */}
+              <div className="text-center pt-2">
+                <p className="text-sm text-zinc-400">
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setTab("register")}
+                    className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                  >
+                    Signup here
+                  </button>
+                </p>
+              </div>
             </form>
           )}
 
           {/* ════════════════ REGISTER ════════════════ */}
           {tab === "register" && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              {/* ① Full Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Полное имя
-                </label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <User className="h-4 w-4 text-zinc-500" />
-                  </div>
+            <form onSubmit={handleRegister} className="space-y-5 animate-in fade-in-50 duration-300">
+              {/* Header */}
+              <div className="text-center space-y-2 mb-8">
+                <h1 className="text-3xl font-bold tracking-tight">Create an Account</h1>
+                <p className="text-sm text-zinc-400">
+                  Join Pairexx and start sharing your skills
+                </p>
+              </div>
+
+              {/* Scrollable form */}
+              <div className="max-h-[calc(100vh-300px)] overflow-y-auto space-y-5 pr-2">
+                
+                {/* Full Name */}
+                <div className="space-y-2.5">
+                  <label className="block text-sm font-semibold text-zinc-200">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={regForm.fullName}
                     onChange={(e) =>
                       setRegForm({ ...regForm, fullName: e.target.value })
                     }
-                    placeholder="Иван Иванов"
-                    className={`${INPUT_CLS} pl-10 pr-4`}
+                    placeholder="Enter your name"
+                    className={`${INPUT_CLS} w-full px-4`}
                     required
                     autoComplete="name"
                   />
                 </div>
-              </div>
 
-              {/* ② Email */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Email
-                </label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <Mail className="h-4 w-4 text-zinc-500" />
-                  </div>
+                {/* Email */}
+                <div className="space-y-2.5">
+                  <label className="block text-sm font-semibold text-zinc-200">
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={regForm.email}
                     onChange={(e) =>
                       setRegForm({ ...regForm, email: e.target.value })
                     }
-                    placeholder="you@example.com"
-                    className={`${INPUT_CLS} pl-10 pr-4`}
+                    placeholder="Enter your email"
+                    className={`${INPUT_CLS} w-full px-4`}
                     required
                     autoComplete="email"
                   />
                 </div>
-              </div>
 
-              {/* ③ Contact Number */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Контактный номер
-                </label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <Phone className="h-4 w-4 text-zinc-500" />
-                  </div>
+                {/* Contact Number */}
+                <div className="space-y-2.5">
+                  <label className="block text-sm font-semibold text-zinc-200">
+                    Contact Number
+                  </label>
                   <input
                     type="tel"
                     value={regForm.phone}
                     onChange={(e) =>
                       setRegForm({ ...regForm, phone: e.target.value })
                     }
-                    placeholder="+7 (___) ___-__-__"
-                    className={`${INPUT_CLS} pl-10 pr-4`}
+                    placeholder="Enter your contact number"
+                    className={`${INPUT_CLS} w-full px-4`}
                     autoComplete="tel"
                   />
                 </div>
-              </div>
 
-              {/* ④ Can Teach */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Могу научить
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={teachInput}
-                    onChange={(e) => setTeachInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addTeachSkill();
-                      }
-                    }}
-                    placeholder="Напр.: Python, дизайн..."
-                    className={`${INPUT_CLS} flex-1 px-4`}
-                  />
-                  <button
-                    type="button"
-                    onClick={addTeachSkill}
-                    disabled={!teachInput.trim()}
-                    className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40 transition-colors shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Добавить
-                  </button>
-                </div>
-                {teachSkills.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {teachSkills.map((skill, i) => (
-                      <span
-                        key={i}
-                        className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400"
-                      >
-                        {skill}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTeachSkills((prev) =>
-                              prev.filter((_, j) => j !== i),
-                            )
-                          }
-                          className="text-emerald-400/60 hover:text-emerald-300 transition-colors"
+                {/* Can Teach */}
+                <div className="space-y-2.5">
+                  <label className="block text-sm font-semibold text-zinc-200">
+                    Can Teach
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={teachInput}
+                      onChange={(e) => setTeachInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addTeachSkill();
+                        }
+                      }}
+                      placeholder="Enter a can teach..."
+                      className={`${INPUT_CLS} flex-1 px-4`}
+                    />
+                    <button
+                      type="button"
+                      onClick={addTeachSkill}
+                      disabled={!teachInput.trim()}
+                      className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-40 transition-colors shrink-0 duration-200"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {teachSkills.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {teachSkills.map((skill, i) => (
+                        <span
+                          key={i}
+                          className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 text-xs text-emerald-300 font-medium"
                         >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* ⑤ Wants to Learn */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Хочу изучить
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={learnInput}
-                    onChange={(e) => setLearnInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addLearnSkill();
-                      }
-                    }}
-                    placeholder="Напр.: Go, маркетинг..."
-                    className={`${INPUT_CLS} flex-1 px-4`}
-                  />
-                  <button
-                    type="button"
-                    onClick={addLearnSkill}
-                    disabled={!learnInput.trim()}
-                    className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40 transition-colors shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Добавить
-                  </button>
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTeachSkills((prev) =>
+                                prev.filter((_, j) => j !== i),
+                              )
+                            }
+                            className="text-emerald-400/60 hover:text-emerald-300 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {learnSkills.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {learnSkills.map((skill, i) => (
-                      <span
-                        key={i}
-                        className="flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs text-blue-400"
-                      >
-                        {skill}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setLearnSkills((prev) =>
-                              prev.filter((_, j) => j !== i),
-                            )
-                          }
-                          className="text-blue-400/60 hover:text-blue-300 transition-colors"
+
+                {/* Wants to Learn */}
+                <div className="space-y-2.5">
+                  <label className="block text-sm font-semibold text-zinc-200">
+                    Wants to Learn
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={learnInput}
+                      onChange={(e) => setLearnInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addLearnSkill();
+                        }
+                      }}
+                      placeholder="Enter a wants to learn..."
+                      className={`${INPUT_CLS} flex-1 px-4`}
+                    />
+                    <button
+                      type="button"
+                      onClick={addLearnSkill}
+                      disabled={!learnInput.trim()}
+                      className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-40 transition-colors shrink-0 duration-200"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {learnSkills.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {learnSkills.map((skill, i) => (
+                        <span
+                          key={i}
+                          className="flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1.5 text-xs text-blue-300 font-medium"
                         >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* ⑥ Password */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Пароль
-                </label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <Lock className="h-4 w-4 text-zinc-500" />
-                  </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={regForm.password}
-                    onChange={(e) =>
-                      setRegForm({ ...regForm, password: e.target.value })
-                    }
-                    placeholder="Минимум 8 символов"
-                    className={`${INPUT_CLS} pl-10 pr-10`}
-                    required
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-zinc-500 hover:text-white transition-colors"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLearnSkills((prev) =>
+                                prev.filter((_, j) => j !== i),
+                              )
+                            }
+                            className="text-blue-400/60 hover:text-blue-300 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              {/* ⑦ Confirm Password */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Подтвердите пароль
-                </label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <Lock className="h-4 w-4 text-zinc-500" />
+                {/* Password */}
+                <div className="space-y-2.5">
+                  <label className="block text-sm font-semibold text-zinc-200">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={regForm.password}
+                      onChange={(e) =>
+                        setRegForm({ ...regForm, password: e.target.value })
+                      }
+                      placeholder="Enter your password"
+                      className={`${INPUT_CLS} w-full px-4 pr-12`}
+                      required
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-500 hover:text-white transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div className="space-y-2.5">
+                  <label className="block text-sm font-semibold text-zinc-200">
+                    Confirm Password
+                  </label>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={regForm.confirm}
                     onChange={(e) =>
                       setRegForm({ ...regForm, confirm: e.target.value })
                     }
-                    placeholder="Повторите пароль"
-                    className={`${INPUT_CLS} pl-10 pr-4`}
+                    placeholder="Confirm your password"
+                    className={`${INPUT_CLS} w-full px-4`}
                     required
                     autoComplete="new-password"
                   />
                 </div>
-              </div>
 
-              {regError && (
-                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                  {regError}
-                </p>
-              )}
-              {regWarn && (
-                <div className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 space-y-2">
-                  <p>{regWarn}</p>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/dashboard")}
-                    className="underline text-amber-300 hover:text-amber-200 text-xs"
-                  >
-                    Войти всё равно →
-                  </button>
-                </div>
-              )}
-              {regSuccess && !regWarn && (
-                <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
-                  Аккаунт создан! Переадресация...
-                </p>
-              )}
+                {regError && (
+                  <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                    {regError}
+                  </p>
+                )}
+                {regWarn && (
+                  <div className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 space-y-2">
+                    <p>{regWarn}</p>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/dashboard")}
+                      className="underline text-amber-300 hover:text-amber-200 text-xs font-medium"
+                    >
+                      Continue anyway →
+                    </button>
+                  </div>
+                )}
+                {regSuccess && !regWarn && (
+                  <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
+                    ✓ Account created! Redirecting...
+                  </p>
+                )}
+
+              </div>
 
               <button
                 type="submit"
                 disabled={regLoading || regSuccess}
-                className="sleek-button w-full disabled:opacity-50"
+                className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 px-6 py-3 font-bold text-white transition-all hover:shadow-lg hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed duration-200 mt-2"
               >
-                {regLoading ? "Регистрирую..." : "Создать аккаунт"}
+                {regLoading ? "Creating account..." : "Sign Up"}
               </button>
+
+              {/* Switch to login */}
+              <div className="text-center pt-2">
+                <p className="text-sm text-zinc-400">
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setTab("login")}
+                    className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                  >
+                    Login here
+                  </button>
+                </p>
+              </div>
             </form>
           )}
         </div>

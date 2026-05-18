@@ -60,19 +60,25 @@ export default function DashboardLayout({
     (state) => state.setPendingNotificationsCount,
   );
   const setIncomingRequests = useChatStore((state) => state.setIncomingRequests);
+  const setSentRequests = useChatStore((state) => state.setSentRequests);
 
-  const refreshPendingNotifications = useCallback(async () => {
+  const refreshExchangeRequests = useCallback(async () => {
     try {
-      const requests = await api.getIncomingRequests();
-      const incoming = Array.isArray(requests) ? requests : [];
+      const [incomingRequests, sentRequests] = await Promise.all([
+        api.getIncomingRequests(),
+        api.getSentRequests(),
+      ]);
+      const incoming = Array.isArray(incomingRequests) ? incomingRequests : [];
+      const sent = Array.isArray(sentRequests) ? sentRequests : [];
       setIncomingRequests(incoming);
+      setSentRequests(sent);
       setPendingNotificationsCount(
         incoming.filter((request) => request.status === "pending").length,
       );
     } catch {
       // Keep the last known badge value when the network is temporarily down.
     }
-  }, [setIncomingRequests, setPendingNotificationsCount]);
+  }, [setIncomingRequests, setPendingNotificationsCount, setSentRequests]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -111,10 +117,10 @@ export default function DashboardLayout({
           setMyMatchProfile(profile);
         })
         .catch(() => null),
-      refreshPendingNotifications(),
+      refreshExchangeRequests(),
     ]);
   }, [
-    refreshPendingNotifications,
+    refreshExchangeRequests,
     router,
     setMe,
     setMyMatchProfile,
@@ -143,7 +149,16 @@ export default function DashboardLayout({
           payload.type === "request_declined" ||
           payload.type === "request_cancelled"
         ) {
-          void refreshPendingNotifications();
+          void refreshExchangeRequests();
+          return;
+        }
+
+        if (
+          payload.type === "exchange_completion_triggered" ||
+          payload.type === "exchange_completed"
+        ) {
+          void refreshExchangeRequests();
+          window.dispatchEvent(new CustomEvent("pairexx:exchange:updated"));
         }
       } catch {
         // Ignore malformed keep-alive or transient payloads.
@@ -151,13 +166,13 @@ export default function DashboardLayout({
     };
 
     es.onerror = () => {
-      void refreshPendingNotifications();
+      void refreshExchangeRequests();
     };
 
     return () => {
       es.close();
     };
-  }, [refreshPendingNotifications]);
+  }, [refreshExchangeRequests]);
 
   function handleLogout() {
     localStorage.removeItem("access_token");
